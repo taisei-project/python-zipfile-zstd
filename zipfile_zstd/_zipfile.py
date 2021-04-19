@@ -2,6 +2,7 @@
 import zipfile
 import zstandard as zstd
 import threading
+import inspect
 
 from ._patcher import patch
 
@@ -37,14 +38,24 @@ def zstd_get_decompressor(compress_type):
         return patch.originals['_get_decompressor'](compress_type)
 
 
-@patch(zipfile, '_get_compressor')
-def zstd_get_compressor(compress_type, compresslevel=None):
-    if compress_type == zipfile.ZIP_ZSTANDARD:
-        if compresslevel is None:
-            compresslevel = 3
-        return zstd.ZstdCompressor(level=compresslevel, threads=12).compressobj()
-    else:
-        return patch.originals['_get_compressor'](compress_type, compresslevel=compresslevel)
+if 'compresslevel' in inspect.signature(zipfile._get_compressor).parameters:
+    @patch(zipfile, '_get_compressor')
+    def zstd_get_compressor(compress_type, compresslevel=None):
+        if compress_type == zipfile.ZIP_ZSTANDARD:
+            if compresslevel is None:
+                compresslevel = 3
+            return zstd.ZstdCompressor(level=compresslevel, threads=12).compressobj()
+        else:
+            return patch.originals['_get_compressor'](compress_type, compresslevel=compresslevel)
+else:
+    @patch(zipfile, '_get_compressor')
+    def zstd_get_compressor(compress_type, compresslevel=None):
+        if compress_type == zipfile.ZIP_ZSTANDARD:
+            if compresslevel is None:
+                compresslevel = 3
+            return zstd.ZstdCompressor(level=compresslevel, threads=12).compressobj()
+        else:
+            return patch.originals['_get_compressor'](compress_type)
 
 
 @patch(zipfile.ZipInfo, 'FileHeader')

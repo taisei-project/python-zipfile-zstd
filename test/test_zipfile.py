@@ -17,7 +17,7 @@ sys.path.append(os.path.join(mydir,'..'))
 os.chdir(mydir)
 
 import zipfile
-import zipfile_ppmd
+import zipfile_zstd
 
 info7z  = subprocess.check_output(['7z', 'i'])
 avail7z = {
@@ -25,9 +25,9 @@ avail7z = {
     zipfile.ZIP_DEFLATED:  b'    40108 Deflate' in info7z,
     zipfile.ZIP_BZIP2:     b'    40202 BZip2'   in info7z,
     zipfile.ZIP_LZMA:      b'    30101 LZMA'    in info7z,
-    # zipfile.ZIP_ZSTANDARD: b'  4F71101 ZSTD'    in info7z,
+    zipfile.ZIP_ZSTANDARD: b'  4F71101 ZSTD'    in info7z,
     # zipfile.ZIP_XZ:        b'       21 LZMA2'   in info7z,
-    zipfile.ZIP_PPMD:      b'    30401 PPMD'    in info7z,
+    # zipfile.ZIP_PPMD:      b'    30401 PPMD'    in info7z,
 }
 
 params = [
@@ -35,9 +35,9 @@ params = [
     ('data/10000SalesRecords.csv', zipfile.ZIP_DEFLATED, 6),
     ('data/10000SalesRecords.csv', zipfile.ZIP_BZIP2, 9),
     ('data/10000SalesRecords.csv', zipfile.ZIP_LZMA, 6),
-    # ('data/10000SalesRecords.csv', zipfile.ZIP_ZSTANDARD, 3),
+    ('data/10000SalesRecords.csv', zipfile.ZIP_ZSTANDARD, 3),
     # ('data/10000SalesRecords.csv', zipfile.ZIP_XZ, 6),
-    ('data/10000SalesRecords.csv', zipfile.ZIP_PPMD, 5),
+    # ('data/10000SalesRecords.csv', zipfile.ZIP_PPMD, 5),
 ]
 
 @pytest.mark.parametrize('fname,method,level',params)

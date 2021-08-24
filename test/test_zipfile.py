@@ -2,6 +2,7 @@ import os
 import sys
 import hashlib
 import subprocess
+import itertools
 import pytest
 try:
     from tempfile import TemporaryDirectory
@@ -30,17 +31,24 @@ avail7z = {
     # zipfile.ZIP_PPMD:      b'    30401 PPMD'    in info7z,
 }
 
-params = [
-    ('data/10000SalesRecords.csv', zipfile.ZIP_STORED, 0),
-    ('data/10000SalesRecords.csv', zipfile.ZIP_DEFLATED, 6),
-    ('data/10000SalesRecords.csv', zipfile.ZIP_BZIP2, 9),
-    ('data/10000SalesRecords.csv', zipfile.ZIP_LZMA, 6),
-    ('data/10000SalesRecords.csv', zipfile.ZIP_ZSTANDARD, 3),
-    # ('data/10000SalesRecords.csv', zipfile.ZIP_XZ, 6),
-    # ('data/10000SalesRecords.csv', zipfile.ZIP_PPMD, 5),
+fnames = [
+    'data/10000SalesRecords.csv',
+    # 'data/7zz',
 ]
 
-@pytest.mark.parametrize('fname,method,level',params)
+methods = [
+    (zipfile.ZIP_STORED, 0),
+    (zipfile.ZIP_DEFLATED, 6),
+    (zipfile.ZIP_BZIP2, 9),
+    (zipfile.ZIP_LZMA, 6),
+    (zipfile.ZIP_ZSTANDARD, 3),
+    # (zipfile.ZIP_XZ, 6),
+    # (zipfile.ZIP_PPMD, 5),
+]
+
+@pytest.mark.parametrize('fname,method,level',[
+    tuple([fname]+list(method)) for fname, method in itertools.product(fnames, methods)
+])
 def test_zipfile_writeread(fname,method,level):
     st = os.stat(fname)
     with open(fname, 'rb') as f:
@@ -62,9 +70,14 @@ def test_zipfile_writeread(fname,method,level):
             len(dec) == st.st_size
             hashlib.sha256(dec).hexdigest() == sha256
 
-@pytest.mark.parametrize('fname,method,level',params)
+@pytest.mark.parametrize('fname,method,level',[
+    tuple([fname]+list(method)) for fname, method in itertools.product(fnames, methods)
+])
 def test_zipfile_open(fname,method,level):
+    chunksiz = 512
     st = os.stat(fname)
+    cnt = (st.st_size+chunksiz-1)//chunksiz
+
     with open(fname, 'rb') as f:
         body = f.read()
         sha256 = hashlib.sha256(body).hexdigest()
@@ -75,13 +88,22 @@ def test_zipfile_open(fname,method,level):
             kwargs['compresslevel'] = level
         with zipfile.ZipFile(os.path.join(tmpdir, 'test.zip'), 'w', **kwargs) as zip:
             with zip.open(fname, 'w') as zf:
-                zf.write(body)
+                for i in range(cnt):
+                    zf.write(body[chunksiz*i:chunksiz*(i+1)])
         if avail7z[method]:
             subprocess.check_call(['7z', 't', os.path.join(tmpdir, 'test.zip')], shell=False)
         with zipfile.ZipFile(os.path.join(tmpdir, 'test.zip'), 'r') as zip:
             info = zip.getinfo(fname)
             assert info.compress_type == method
+            decsiz = 0
+            hashobj = hashlib.sha256()
             with zip.open(info, 'r') as zf:
-                dec = zf.read()
-            len(dec) == st.st_size
-            hashlib.sha256(dec).hexdigest() == sha256
+                while True:
+                    dec0 = zf.read(chunksiz)
+                    decsiz += len(dec0)
+                    hashobj.update(dec0)
+                    if len(dec0) < chunksiz:
+                        break
+                    assert len(dec0) == chunksiz
+            assert decsiz == st.st_size
+            assert hashobj.hexdigest() == sha256

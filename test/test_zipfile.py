@@ -4,14 +4,8 @@ import hashlib
 import subprocess
 import itertools
 import pytest
-try:
-    from tempfile import TemporaryDirectory
-except ImportError:
-    from backports.tempfile import TemporaryDirectory
-try:
-    from inspect import signature
-except ImportError:
-    from funcsigs import signature
+from tempfile import TemporaryDirectory
+from inspect import signature
 
 mydir = os.path.abspath(os.path.dirname(__file__))
 sys.path.append(os.path.join(mydir,'..'))

@@ -1,3 +1,5 @@
+# ported from https://github.com/cielavenir/zipfile39/blob/master/test/test_zipfile.py #
+
 import os
 import sys
 import hashlib

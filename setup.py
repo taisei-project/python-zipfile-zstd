@@ -6,7 +6,7 @@ with open('README.md', 'r', encoding='utf-8') as fh:
 
 setuptools.setup(
     name='zipfile-zstd',
-    version="0.0.3",
+    version="0.0.4",
     author='Andrei Alexeyev',
     author_email='akari@taisei-project.org',
     description='Monkey patch the standard zipfile module to enable Zstandard support',

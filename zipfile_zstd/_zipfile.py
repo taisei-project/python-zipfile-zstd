@@ -9,7 +9,7 @@ from ._patcher import patch
 
 zipfile.ZIP_ZSTANDARD = 93
 zipfile.compressor_names[zipfile.ZIP_ZSTANDARD] = 'zstandard'
-zipfile.ZSTANDARD_VERSION = 63
+zipfile.ZSTANDARD_VERSION = 20
 
 
 @patch(zipfile, '_check_compression')
